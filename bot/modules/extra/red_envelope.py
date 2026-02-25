@@ -45,16 +45,24 @@ class RedEnvelope:
 
 
 async def create_reds(
-    money, members, first_name, sender_id, flag=None, private=None, private_text=None
+    money,
+    members,
+    first_name,
+    sender_id,
+    envelope_type="random",
+    private=None,
+    private_text=None,
 ):
     red_id = await pwd_create(5)
     envelope = RedEnvelope(
-        money=money, members=members, sender_id=sender_id, sender_name=first_name
+        money=money,
+        members=members,
+        sender_id=sender_id,
+        sender_name=first_name,
+        envelope_type=envelope_type,
     )
 
-    if flag:
-        envelope.type = "equal"
-    elif private:
+    if private:
         envelope.type = "private"
         envelope.target_user = private
     if private_text is None:
@@ -173,7 +181,7 @@ async def send_red_envelope(_, msg):
             sendMessage(
                 msg,
                 f"**🧧 发红包：\n\n/red [总{sakura_b}数] [份数] [mode] [祝福语（可选）]**\n\n"
-                f"[mode]留空为拼手气, 任意值为均分\n[祝福语]不传则随机默认祝福语\n专享红包请回复 + {sakura_b}",
+                f"[mode]填 1 为拼手气, 其他值为均分\n[祝福语]不传则随机默认祝福语\n专享红包请回复 + {sakura_b}",
                 timer=60,
             ),
         )
@@ -184,7 +192,8 @@ async def send_red_envelope(_, msg):
         return
 
     # 创建并发送红包
-    flag = msg.command[3] if len(msg.command) > 3 else (1 if money == members else None)
+    mode_param = msg.command[3] if len(msg.command) > 3 else None
+    envelope_type = "random" if (mode_param is None or str(mode_param) == "1") else "equal"
     private_text = msg.command[4] if len(msg.command) > 4 else None
     reply, _ = await asyncio.gather(msg.reply("正在准备红包，稍等"), msg.delete())
 
@@ -193,7 +202,7 @@ async def send_red_envelope(_, msg):
         members=members,
         first_name=first_name,
         sender_id=msg.from_user.id if not msg.sender_chat else msg.sender_chat.id,
-        flag=flag,
+        envelope_type=envelope_type,
         private_text=private_text
     )
 
