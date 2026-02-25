@@ -100,6 +100,16 @@ async def send_red_envelope(_, msg):
 
     # 处理专享红包
     if msg.reply_to_message and red_envelope.allow_private:
+        target_from_user = msg.reply_to_message.from_user
+        target_sender_chat = msg.reply_to_message.sender_chat
+
+        # 不允许对机器人或频道发送专属红包
+        if (target_from_user and target_from_user.is_bot) or target_sender_chat:
+            return await asyncio.gather(
+                msg.delete(),
+                sendMessage(msg, "🚫 专属红包不能发给机器人或频道!", timer=60),
+            )
+
         try:
             money = int(msg.command[1])
             private_text = (
@@ -112,7 +122,7 @@ async def send_red_envelope(_, msg):
                 msg.delete(),
                 sendMessage(
                     msg,
-                    "**🧧 专享红包：\n\n请回复某人 [数额][空格][个性化留言（可选）]**",
+                    "**🧧 专享红包：\n\n请回复某人 [数额] [祝福语（可选）]**",
                     timer=60,
                 ),
             )
@@ -131,7 +141,7 @@ async def send_red_envelope(_, msg):
                     msg.delete(),
                     sendMessage(
                         msg,
-                        "**🧧 专享红包：\n\n请回复某人 [数额][空格][个性化留言（可选）]**",
+                        "**🧧 专享红包：\n\n请回复某人 [数额] [祝福语（可选）]**",
                         timer=60,
                     ),
                 )
@@ -161,13 +171,14 @@ async def send_red_envelope(_, msg):
             money, 1, user_pic, f"{msg.reply_to_message.from_user.first_name} 专享"
         )
 
+        sign_name = f'{msg.sender_chat.title}' if msg.sender_chat else f'[{msg.from_user.first_name}](tg://user?id={msg.from_user.id})'
         await asyncio.gather(
             sendPhoto(msg, photo=cover, buttons=ikb),
             reply.edit(
                 f"🔥 [{msg.reply_to_message.from_user.first_name}]"
                 f"(tg://user?id={msg.reply_to_message.from_user.id})\n"
-                f"您收到一个来自 [{first_name}](tg://user?id={msg.from_user.id}) 的专属红包"
-            ),
+                f"您收到一个来自 {sign_name} 的专属红包"
+            )
         )
         return
 
